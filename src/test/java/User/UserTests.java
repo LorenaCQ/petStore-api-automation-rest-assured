@@ -76,4 +76,13 @@ public class UserTests {
                 .and().time(lessThan(2000L))
                 .and().body(matchesJsonSchemaInClasspath("loginResponseSchema.json")); //validação do schema com o json schema validator instalado no pom.xml
     }
+
+    @Test
+    public void GetUserByUsername_userIsValid_ReturnOn(){
+        request.when()
+                .get("/user/" + user.getUsername())
+                .then()
+                .assertThat().statusCode(200).and().time(lessThan(2000L))
+                .and().body("username", equalTo(user.getUsername()));
+    }
 }
