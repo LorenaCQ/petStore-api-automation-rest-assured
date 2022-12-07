@@ -48,12 +48,14 @@ public class UserTests {
     //Executa uma função antes que cada um dos testes neste arquivo seja executado.
     @BeforeEach
     void setRequest (){
-        request = given().header("api-key", "special-key") //com given, vai ser a primeira pre condição
+        request = given().config(RestAssured.config().logConfig(logConfig().enableLoggingOfRequestAndResponseIfValidationFails()))
+                .header("api-key", "special-key") //com given, vai ser a primeira pre condição
                 .contentType(ContentType.JSON);
 
     }
 
     @Test
+    @Order(1)
     public void CreateNewUser_WithValidData_ReturnOk(){
         request.body(user)
                 .when()
@@ -66,6 +68,7 @@ public class UserTests {
                 .body("size()", equalTo(3));
     }
     @Test
+    @Order(2)
     public void GetLogin_ValidUser_ReturnOn(){
         request.param("username", user.getUsername())
                 .param("password", user.getPassword())
@@ -78,11 +81,32 @@ public class UserTests {
     }
 
     @Test
-    public void GetUserByUsername_userIsValid_ReturnOn(){
+    @Order(3)
+    public void GetUserByUsername_userIsValid_ReturnOk(){
         request.when()
                 .get("/user/" + user.getUsername())
                 .then()
                 .assertThat().statusCode(200).and().time(lessThan(2000L))
                 .and().body("username", equalTo(user.getUsername()));
+    }
+
+    @Test
+    @Order(4)
+    public void DeleteUser_userExists_Returnok(){
+        request.when()
+                .delete("/user/" + user.getUsername())
+                .then()
+                .assertThat().statusCode(200).and().time(lessThan(2000L))
+                .log();
+    }
+
+    @Test
+    @Order(5)
+    public void CreateNewUser_withInvalidBody_ReturnBadRequest(){
+        request.body("teste")
+                .when()
+                .post("/user/")
+                .then()
+                .extract().response();
     }
 }
