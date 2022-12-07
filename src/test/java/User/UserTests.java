@@ -65,4 +65,15 @@ public class UserTests {
                 .body("message", isA(String.class))
                 .body("size()", equalTo(3));
     }
+    @Test
+    public void GetLogin_ValidUser_ReturnOn(){
+        request.param("username", user.getUsername())
+                .param("password", user.getPassword())
+                .when()
+                .get("/user/login")
+                .then()
+                .assertThat().statusCode(200)
+                .and().time(lessThan(2000L))
+                .and().body(matchesJsonSchemaInClasspath("loginResponseSchema.json")); //validação do schema com o json schema validator instalado no pom.xml
+    }
 }
