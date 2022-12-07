@@ -1,6 +1,7 @@
 package User;
 
 import Entities.User;
+import com.github.javafaker.Faker;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.ErrorLoggingFilter;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -23,9 +24,45 @@ A vantagem do seu uso: alguns testes dependem um do outro, porem tem alguns que 
 public class UserTests {
 
     private static User user; //variável que vai ser reutilizada nos testes
+
+    public static Faker faker;
+    public static RequestSpecification request;
     @BeforeAll //quer dizer que vai ser executado antes de tudo
-    public void setup(){
+    public static void setup(){
         RestAssured.baseURI = "https://petstore.swagger.io/v2";
 
+        //Instanciação do Faker
+        faker = new Faker();
+
+        //Geração do usuário com o uso do Faker
+        user = new User(
+                    faker.name().username(),
+                    faker.name().firstName(),
+                    faker.name().lastName(),
+                    faker.internet().safeEmailAddress(),
+                    faker.internet().password(8,10),
+                    faker.phoneNumber().toString()
+                );
+    }
+
+    //Executa uma função antes que cada um dos testes neste arquivo seja executado.
+    @BeforeEach
+    void setRequest (){
+        request = given().header("api-key", "special-key") //com given, vai ser a primeira pre condição
+                .contentType(ContentType.JSON);
+
+    }
+
+    @Test
+    public void CreateNewUser_WithValidData_ReturnOk(){
+        request.body(user)
+                .when()
+                .post("/user")
+                .then()
+                .assertThat().statusCode(200).and()
+                .body("code", equalTo(200))
+                .body("type", equalTo("unknown"))
+                .body("message", isA(String.class))
+                .body("size()", equalTo(3));
     }
 }
