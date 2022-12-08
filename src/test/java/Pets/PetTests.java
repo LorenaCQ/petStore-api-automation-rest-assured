@@ -1,6 +1,7 @@
-package User;
+package Pets;
 
-import Entities.User;
+import Entities.Pet;
+import Entities.Pet;
 import com.github.javafaker.Faker;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.ErrorLoggingFilter;
@@ -21,9 +22,9 @@ os que não possuem são executados depois.
 A vantagem do seu uso: alguns testes dependem um do outro, porem tem alguns que são independentes.
 * */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class UserTests {
 
-    private static User user; //variável que vai ser reutilizada nos testes
+public class PetTests {
+    private static Pet pet; //variável que vai ser reutilizada nos testes
 
     public static Faker faker;
     public static RequestSpecification request;
@@ -35,13 +36,9 @@ public class UserTests {
         faker = new Faker();
 
         //Geração do usuário com o uso do Faker
-        user = new User(
-                    faker.name().username(),
-                    faker.name().firstName(),
-                    faker.name().lastName(),
-                    faker.internet().safeEmailAddress(),
-                    faker.internet().password(8,10),
-                    faker.phoneNumber().toString()
+        pet = new Pet(
+                faker.number().numberBetween(1,1),
+                faker.animal().name()
                 );
     }
     //Executa uma função antes que cada um dos testes neste arquivo seja executado.
@@ -55,46 +52,29 @@ public class UserTests {
 
     @Test
     @Order(1)
-    public void CreateNewUser_WithValidData_ReturnOk(){
-        request.body(user)
+    public void CreateNewPet_WithValidData_ReturnOk(){
+        request.body(pet)
                 .when()
-                .post("/user")
+                .post("/pet")
                 .then()
-                .assertThat().statusCode(200).and()
-                .body("code", equalTo(200))
-                .body("type", equalTo("unknown"))
-                .body("message", isA(String.class))
-                .body("size()", equalTo(3));
+                .assertThat().statusCode(200).time(lessThan(2000L)).log();
     }
     @Test
     @Order(2)
-    public void GetLogin_ValidUser_ReturnOk(){
-        request.param("username", user.getUsername())
-                .param("password", user.getPassword())
-                .when()
-                .get("/user/login")
+    public void GetPetById_ValidPet_ReturnOk(){
+        request.when()
+                .get("/pet/" + pet.getIdpet())
                 .then()
-                .assertThat().statusCode(200)
-                .and().time(lessThan(2000L))
-                .and().body(matchesJsonSchemaInClasspath("loginResponseSchema.json")); //validação do schema com o json schema validator instalado no pom.xml
+                .assertThat().statusCode(200).and().time(lessThan(2000L))
+                .and().body("petid", equalTo(pet.getIdpet()));
     }
 
     @Test
     @Order(3)
-    public void GetUserByUsername_userIsValid_ReturnOk(){
-        request.when()
-                .get("/user/" + user.getUsername())
-                .then()
-                .assertThat().statusCode(200).and().time(lessThan(2000L))
-                .and().body("username", equalTo(user.getUsername()));
-    }
-
-    @Test
-    @Order(4)
-    public void CreateNewUser_withInvalidBody_ReturnBadRequest(){
+    public void CreateNewPet_withInvalidBody_ReturnBadRequest(){
         Response response = request.body("teste")
                 .when()
-                .post("/user/")
+                .post("/pet/")
                 .then()
                 .extract().response();
 
@@ -105,10 +85,10 @@ public class UserTests {
     }
 
     @Test
-    @Order(5)
-    public void DeleteUser_userExists_Returnok(){
+    @Order(4)
+    public void DeletePet_petExists_Returnok(){
         request.when()
-                .delete("/user/" + user.getUsername())
+                .delete("/pet/" + pet.getIdpet())
                 .then()
                 .assertThat().statusCode(200).and().time(lessThan(2000L))
                 .log();
